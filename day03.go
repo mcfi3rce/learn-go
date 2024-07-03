@@ -24,7 +24,7 @@ func isSymbol(s string) bool {
 	return true // No letters or digits found, so it's a symbol string
 }
 
-func checkAroundForSymbol(r int, c int, text []string, symbols []string) (bool, []string) {
+func checkAroundForSymbol(r int, c int, text []string, num Number) (bool, Number) {
 	/*
 	  467-1,14..
 	  ..0,-1*......
@@ -40,17 +40,21 @@ func checkAroundForSymbol(r int, c int, text []string, symbols []string) (bool, 
 		if newR >= 0 && newC >= 0 && newR < len(text) && newC < len(text[newR]) {
 			val := string(text[newR][newC])
 			if isSymbol(val) {
-				symbols = append(symbols, val)
-				return true, symbols
+				return true, Number{-1, val, newR, newC}
 			}
-		} else {
-			//fmt.Println("Skipping out-of-bounds access for", newR, newC)
 		}
 	}
-	return false, symbols
+	return false, Number{-1, "", -1, -1}
 }
 
-func main() {
+type Number struct {
+	value     int
+	symbol    string
+	symbolRow int
+	symbolCol int
+}
+
+func day03part1() {
 	file, err := os.ReadFile("./day_03.txt")
 
 	if err != nil {
@@ -58,15 +62,20 @@ func main() {
 	}
 	text := strings.Split(string(file), "\n")
 	total := 0
-	var s []int
-	var symbols []string
+
+	var numbers []Number
 
 	for r := 0; r < len(text); r++ {
 		num := ""
 		isValid := false
+		number := Number{}
 		for c := 0; c < len(text[r]); c++ {
-			for (text[r][c] != '.' && !isSymbol(string(text[r][c]))) && c < len(text[r])-1 {
+			for c < len(text[r]) {
 				val := string(text[r][c])
+
+				if val == "." || isSymbol(val) {
+					break
+				}
 
 				num += val
 				// See if current number is a number
@@ -75,7 +84,7 @@ func main() {
 					// we only want to check if it's false otherwise we can just keep moving forward
 					if !isValid {
 						// if it is a symbol that means the number is valid
-						isValid, symbols = checkAroundForSymbol(r, c, text, symbols)
+						isValid, number = checkAroundForSymbol(r, c, text, number)
 					}
 				}
 
@@ -84,7 +93,8 @@ func main() {
 			if isValid {
 				if x, err := strconv.Atoi(num); err == nil {
 					total += x
-					s = append(s, x)
+					number.value = x
+					numbers = append(numbers, number)
 				}
 			}
 			isValid = false
@@ -99,8 +109,34 @@ func main() {
 		b. if you haven't found any symbols once you hit the end of a number don't add it
 	**/
 
-	for i := 0; i < len(s) && i < len(symbols); i++ {
-		fmt.Println(s[i], symbols[i])
+	// iterate through the array and if two numbers have a * and the same row column values
+	// then multiply them together
+	// Map to keep track of numbers by their location
+	locationMap := make(map[string][]int)
+
+	// Populate the map
+	for _, num := range numbers {
+		if num.symbol == "*" {
+			key := fmt.Sprintf("%d-%d", num.symbolRow, num.symbolCol)
+			locationMap[key] = append(locationMap[key], num.value)
+		}
 	}
+
+	productTotal := 0
+	for key, vals := range locationMap {
+		product := 1
+		if len(vals) > 1 {
+			for _, val := range vals {
+				product *= val
+			}
+			fmt.Printf("Location %s has product: %d\n", key, product)
+		}
+		if product > 1 {
+			productTotal += product
+		}
+	}
+
+	fmt.Println(numbers)
 	fmt.Println("Total: ", total)
+	fmt.Println("Product Total: ", productTotal)
 }
