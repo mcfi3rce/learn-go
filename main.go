@@ -9,5 +9,5 @@ func main() {
 	// fmt.Println(connected(0, 2))
 	//day06pt1()
 	//day06pt2()
-	day07pt1()
+	day07pt2(nil)
 }
